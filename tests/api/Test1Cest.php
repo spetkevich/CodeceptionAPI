@@ -13,18 +13,24 @@ class Test1Cest
     {
     }
 
+    private $totalViews;
+    private $totalReaders;
+
     public function checkBooksJson(\ApiTester $I)
     {
         $I->sendGET('books.json');
         $I->seeResponseCodeIs(HttpCode::OK); // 200
         $I->seeResponseIsJson();
+        $this->totalViews = array_sum($I->grabDataFromResponseByJsonPath('$..views'));
+        $this->totalReaders = array_sum($I->grabDataFromResponseByJsonPath('$..readers'));
         $I->seeResponseMatchesJsonType([
             'id' => 'integer',
             'title' => 'string|null',
             'author' => 'string|null',
             'views' => 'integer',
-            'readers' => 'integer'
+            'readers' => 'integer',
         ]);
+        $I->seeResponseIsJson();
     }
 
     public function checkDashboardJson(\ApiTester $I)
@@ -33,13 +39,11 @@ class Test1Cest
         $I->seeResponseCodeIs(HttpCode::OK); // 200
         $I->seeResponseIsJson();
         $I->seeResponseJsonMatchesXpath('//dashboard/totalViews');
-        $totalViews = $I->grabDataFromResponseByJsonPath('$.dashboard.totalViews')[0];
-        $totalReaders = $I->grabDataFromResponseByJsonPath('$..dashboard.totalReaders')[0];
-        $involvement = round(100 * $totalReaders / $totalViews, 2);
+        $involvement = round(100 * $this->totalReaders / $this->totalViews, 2);
         $I->seeResponseMatchesJsonType(['dashboard' => [
-            'totalViews' => 'integer',
-            'totalReaders' => 'integer',
-            'involvement' => 'float:=' . $involvement
+            'totalViews' => 'integer:=' . $this->totalViews,
+            'totalReaders' => 'integer:=' . $this->totalReaders,
+            'involvement' => 'integer:=' . $involvement,
         ]]);
     }
 
